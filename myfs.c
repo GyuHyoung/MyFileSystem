@@ -150,7 +150,7 @@ int main(){
 		sscanf(command, "%s %s %s %s %s", cmd[0], cmd[1], cmd[2], cmd[3], cmd[4]);
 
 		for(i=0; i<5; i++){
-			printf("%d : %s\n", i + 1, cmd[i]);
+			printf("%d command : %s\n", i + 1, cmd[i]);
 		}
 	}
 
