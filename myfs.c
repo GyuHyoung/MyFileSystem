@@ -22,8 +22,8 @@ struct file_info{
 };
 
 struct directory_info{
-	char name[21];
-	short number[21];
+	char name[18][5];
+	short number[18];
 };
 
 struct indirect_info{
@@ -53,16 +53,20 @@ struct linked{
 	struct linked *next;
 };
 
+struct linked *list[1024];
 
-void mypwd(struct present_working_directory pwd);
+void myshowfile(int, int, char []);
+void print_byte(int, int, int);
+void mypwd(struct present_working_directory);
 void print_block_list(int);
 void usage_plus(unsigned int [], int, int);
 void usage_minus(unsigned int [], int, int);
 int usage_check(unsigned int [], int, int);
 int usage_count(unsigned int [], int n);
+int where_i_am();
 
 int main(){
-	int i, n, shell = 0;
+	int i, n, m, shell = 0;
 	char mycmd[][12] = {"mymkfs", "myfs_shell", "myls", "mycat", "myshowfile", "mypwd", "mycd", "mycp", "mycpto", "mycpfrom", "mymkdir", "myrmdir", "myrm", "mymv", "mytouch", "myshowinode", "myshowblock", "mystate", "mytree", "byebye"};
 	char command[100], cmd[5][20];
 	time_t now = time(NULL);
@@ -79,6 +83,42 @@ int main(){
 	inode->size = 0;
 	inode->time = localtime(&now);
 	inode->di = 1;
+
+	for(i=0; i<1024; i++){
+		list[i] = malloc(sizeof(struct linked));
+		list[i] -> number = i;
+		list[i] -> next = NULL;
+	}
+	usage_plus(myfs.super.i_state, 16, 2);
+	usage_plus(myfs.super.d_state, 16, 2);
+	strcpy(myfs.block[0].directory.name[0], "abcd");
+	myfs.block[0].directory.number[0] = 2;
+	myfs.inode[1].type = 1;
+	myfs.inode[1].time = localtime(&now);
+	myfs.inode[1].di = 2;
+	char temp[128];
+	strcpy(temp, "ABCDEFGHIJKLMNOPQRSTUVWXYZ!");
+	strcpy(myfs.block[1].file.data, temp);
+	myfs.inode[1].size = sizeof(myfs.block[1].file.data);
+	/*
+	   inode->sin = 2;
+	   inode->din = 67;
+	   for(i=0; i<18; i++){
+	   strcpy(myfs.block[0].directory.name[i], "abcd");
+	   myfs.block[0].directory.number[i] = 99;
+	   }
+	   for(i=0; i<64; i++){
+	   myfs.block[1].indirect.number[i] = i+3;
+	   }
+	   int j;
+	   for(i=0; i<64; i++){
+	   for(j=0; j<18; j++){
+	   strcpy(myfs.block[i+2].directory.name[j], "efgh");
+	   myfs.block[i+2].directory.number[j] = i+3;
+	   }
+	   }
+	   strcpy(myfs.block[5].directory.name[0], "find");
+	   myfs.block[5].directory.number[j] = 67;*/
 
 	//명령어 받기
 	while(1){
@@ -127,7 +167,6 @@ int main(){
 				break;
 				//myls
 			case 1 :
-				printf("case %d\n", i);
 				break;
 				//mycat
 			case 2 :
@@ -135,11 +174,14 @@ int main(){
 				break;
 				//myshowfile
 			case 3 :
-				printf("case %d\n", i);
+				n = atoi(cmd[1]);
+				m = atoi(cmd[2]);
+				myshowfile(n, m, cmd[3]);
 				break;
 				//mypwd
 			case 4 :
 				mypwd(pwd);
+				printf("\n");
 				break;
 				//mycd
 			case 5 :
@@ -221,6 +263,115 @@ int main(){
 		printf("\n");
 	}
 	return 0;
+}
+
+//myshowfile 함수
+void myshowfile(int num1, int num2, char file[]){
+	int check, i, j, k, n, block, list;
+	struct inode_list *inode;
+
+	n = where_i_am();
+	inode = &myfs.inode[n-1];
+
+
+	list = inode -> di;
+	//다이렉트 블럭에서
+	for(i=0; i<18; i++){
+		check = strcmp(myfs.block[list-1].directory.name[i], "");
+		if(check==0){
+			printf("error : no such file1\n");
+			return;
+		}
+		check = strcmp(myfs.block[list-1].directory.name[i], file);
+		if(check==0){
+			n = myfs.block[list-1].directory.number[i];
+			if(n==0){
+				printf("error : no such file2\n");
+				return;
+			}
+			print_byte(num1, num2, n);
+			return;
+		}
+	}
+	//싱글 인다이렉트 블럭에서
+	block = inode -> sin;
+	for(i=0; i<64; i++){
+		list = myfs.block[block-1].indirect.number[i];
+		for(j=0; j<18; j++){
+			if(!strcmp(myfs.block[list-1].directory.name[i], "")){
+				printf("error : no such file\n");
+				return;
+			}
+			if(!strcmp(myfs.block[list-1].directory.name[i], file)){
+				n = myfs.block[list-1].directory.number[i];
+				if(n==0){
+					printf("error : no such file\n");
+					return;
+				}
+				print_byte(num1, num2, n);
+				return;
+			}
+		}
+	}
+	//더블 인다이렉트 블럭에서
+	for(i=0; i<64; i++){
+		block = myfs.block[(inode -> din)-1].indirect.number[i];
+		for(j=0; j<64; j++){
+			list = myfs.block[block-1].indirect.number[i];
+			for(k=0; k<18; k++){
+				if(!strcmp(myfs.block[list-1].directory.name[i], "")){
+					printf("error : no such file\n");
+					return;
+				}
+				if(!strcmp(myfs.block[list-1].directory.name[i], file)){
+					n = myfs.block[list-1].directory.number[i];
+					if(n==0){
+						printf("error : no such file\n");
+						return;
+					}
+					print_byte(num1, num2, n);
+					return;
+				}
+			}
+		}
+	}
+}
+
+//바이트단위 출력
+void print_byte(int num1, int num2, int n){
+	int i, start1, start2, count, num;
+	union data_block *block;
+
+	start1 = num1 / 128;
+	start2 = num1 % 128;
+	count = num2 - num1 + 1;
+	num = list[(myfs.inode[n-1].di)-1]->number;
+	block = &(myfs.block[num]);
+
+	while(1){
+		if(start1 == 0){
+			i = start2 - 1;
+			while(1){
+				if(count==0){
+					printf("\n");
+					return;
+				}
+				if(i==128){
+					num = list[num] -> next -> number;
+					block = &(myfs.block[num]);
+					i = 0;
+				}
+				printf("%c", block -> file.data[i]);
+				i++;
+				count--;
+			}
+		}
+		else{
+			num = list[num] -> next -> number;
+			block = &(myfs.block[num]);
+			start1--;
+		}
+	}
 }
 
 //현재 위치 출력
@@ -344,6 +495,17 @@ int usage_count(unsigned int c[], int n){
 	}
 	return count;
 }
+
+int where_i_am(){
+	int i;
+	for(i=0; i<10; i++){
+		if(!strcmp(pwd.name[i], "")){
+			i--;
+			return pwd.number[i];
+		}
+	}
+}
+
 
 
 
