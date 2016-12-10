@@ -289,7 +289,6 @@ int main(){
 	return 0;
 }
 
-<<<<<<< HEAD
 void myls(char option[]){
 	struct ls_list *head, *head2;
 	int n = where_i_am(pwd), i = 0, l = 0, k, count, a, b;
@@ -343,37 +342,15 @@ struct ls_list *ls_link(struct inode_list *inode){
 	int i, j, k, list, check, block;
 	static int count = 0;
 	struct ls_list *temp = NULL;
-=======
-//파일의 아이노드 찾기
-int find_file(struct inode_list *inode, char file[]){
-	int i, j, k, n, check, block, list;
->>>>>>> origin/master
 
 	//다이렉트 블럭에서
 	list = inode -> di;
 	for(i=0; i<18; i++){
-<<<<<<< HEAD
 		if(count == i){
-=======
-		if(!strcmp(myfs.block[list-1].directory.name[i], "")){
-			return 0;
-		}
-		if(!strcmp(myfs.block[list-1].directory.name[i], file)){
-			n = myfs.block[list-1].directory.number[i];
-			return n;
-		}
-	}
-	//싱글 인다이렉트 블럭에서
-	block = inode -> sin;
-	for(i=0; i<64; i++){
-		list = myfs.block[block-1].indirect.number[i];
-		for(j=0; j<18; j++){
->>>>>>> origin/master
 			if(!strcmp(myfs.block[list-1].directory.name[i], "")){
 				count = 0;
 				return NULL;
 			}
-<<<<<<< HEAD
 			else{
 				if(myfs.block[list-1].directory.number[i] != 0){
 					temp = malloc(sizeof(struct ls_list));
@@ -388,11 +365,6 @@ int find_file(struct inode_list *inode, char file[]){
 				}
 				check = 1;
 				break;
-=======
-			if(!strcmp(myfs.block[list-1].directory.name[i], file)){
-				n = myfs.block[list-1].directory.number[i];
-				return n;
->>>>>>> origin/master
 			}
 		}
 	}
@@ -423,7 +395,6 @@ int find_file(struct inode_list *inode, char file[]){
 						break;
 					}
 				}
-<<<<<<< HEAD
 			}
 		}
 	}
@@ -455,11 +426,6 @@ int find_file(struct inode_list *inode, char file[]){
 							break;
 						}
 					}
-=======
-				if(!strcmp(myfs.block[list-1].directory.name[i], file)){
-					n = myfs.block[list-1].directory.number[i];
-					return n;
->>>>>>> origin/master
 				}
 			}
 		}
@@ -540,22 +506,6 @@ void myshowfile(int num1, int num2, char file[]){
 	sscanf(file, "%4s", name);
 
 	n = find_file(inode, name);
-	if(n==0){
-		printf("error : no such file\n");
-		return;
-	}
-	print_byte(num1, num2, n);
-}
-
-//myshowfile 함수
-void myshowfile(int num1, int num2, char file[]){
-	int n;
-	struct inode_list *inode;
-
-	n = where_i_am();
-	inode = &myfs.inode[n-1];
-
-	n = find_file(inode, file);
 	if(n==0){
 		printf("error : no such file\n");
 		return;
