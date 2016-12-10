@@ -27,7 +27,7 @@ struct directory_info{
 };
 
 struct indirect_info{
-	unsigned int number[32];
+	short number[64];
 };
 
 union data_block{
@@ -55,15 +55,32 @@ struct linked{
 
 
 void mypwd(struct present_working_directory pwd);
+void print_block_list(int);
+void usage_plus(unsigned int [], int, int);
+void usage_minus(unsigned int [], int, int);
+int usage_check(unsigned int [], int, int);
+int usage_count(unsigned int [], int n);
 
 int main(){
-	int i, shell = 0;
+	int i, n, shell = 0;
 	char mycmd[][12] = {"mymkfs", "myfs_shell", "myls", "mycat", "myshowfile", "mypwd", "mycd", "mycp", "mycpto", "mycpfrom", "mymkdir", "myrmdir", "myrm", "mymv", "mytouch", "myshowinode", "myshowblock", "mystate", "mytree", "byebye"};
 	char command[100], cmd[5][20];
+	time_t now = time(NULL);
 	FILE *save, *load;
+	struct inode_list *inode = NULL;
+
+	//초기화
 	strcpy(pwd.name[0], "/");
 	pwd.number[0] = 1;
+	usage_plus(myfs.super.i_state, 16, 1);
+	usage_plus(myfs.super.d_state, 32, 1);
+	inode = &myfs.inode[0];
+	inode->type = 0;
+	inode->size = 0;
+	inode->time = localtime(&now);
+	inode->di = 1;
 
+	//명령어 받기
 	while(1){
 		if(shell){
 			printf("[");
@@ -87,7 +104,7 @@ int main(){
 				break;
 			}
 		}
-		
+
 		switch(i){
 			//mkmyfs, myfs_shell
 			case 0 :
@@ -108,84 +125,105 @@ int main(){
 					}
 				}
 				break;
-			//myls
+				//myls
 			case 1 :
 				printf("case %d\n", i);
 				break;
-			//mycat
+				//mycat
 			case 2 :
 				printf("case %d\n", i);
 				break;
-			//myshowfile
+				//myshowfile
 			case 3 :
 				printf("case %d\n", i);
 				break;
-			//mypwd
+				//mypwd
 			case 4 :
 				mypwd(pwd);
 				break;
-			//mycd
+				//mycd
 			case 5 :
 				printf("case %d\n", i);
 				break;
-			//mycp
+				//mycp
 			case 6 :
 				printf("case %d\n", i);
 				break;
-			//mycpto
+				//mycpto
 			case 7 :
 				printf("case %d\n", i);
 				break;
-			//mycpfrom
+				//mycpfrom
 			case 8 :
 				printf("case %d\n", i);
 				break;
-			//mymkdir
+				//mymkdir
 			case 9 :
 				printf("case %d\n", i);
 				break;
-			//myrmdir
+				//myrmdir
 			case 10 :
 				printf("case %d\n", i);
 				break;
-			//myrm
+				//myrm
 			case 11 :
 				printf("case %d\n", i);
 				break;
-			//mymv
+				//mymv
 			case 12 :
 				printf("case %d\n", i);
 				break;
-			//mytouch
+				//mytouch
 			case 13 :
 				printf("case %d\n", i);
 				break;
-			//myshowinode
+				//myshowinode
 			case 14 :
-				printf("case %d\n", i);
+				n = atoi(cmd[1]);
+				if(usage_check(myfs.super.i_state, 16, n)){
+					inode = &myfs.inode[n-1];
+					printf("file type : %s\n", (inode->type == 0) ? "directory" : "regular file");
+					printf("file size : %d byte\n", inode->size);
+					printf("modified time : %d/%d/%d %02d:%02d:%02d\n", inode->time->tm_year + 1900, inode->time->tm_mon + 1, inode->time->tm_mday, inode->time->tm_hour, inode->time->tm_min, inode->time->tm_sec);
+					printf("data block list : %d", inode->di);
+					print_block_list(n);
+					printf("\n");
+				}
+				else{
+					printf("error : empty inode\n");
+				}
 				break;
-			//myshowblock
+				//myshowblock
 			case 15 :
-				printf("case %d\n", i);
+				n = atoi(cmd[1]);
+				if(usage_check(myfs.super.d_state, 32, n)){
+					printf("%s\n", myfs.block[n-1].file.data);
+				}
+				else{
+					printf("error : empty data block\n");
+				}
 				break;
-			//mystate
+				//mystate
 			case 16 :
-				printf("case %d\n", i);
+				printf("free inode : %d\n", 512 - usage_count(myfs.super.i_state, 16));
+				printf("free data block : %d\n", 1024 - usage_count(myfs.super.d_state, 32));
 				break;
-			//mytree
+				//mytree
 			case 17 :
 				printf("case %d\n", i);
 				break;
-			//byebye
+				//byebye
 			case 18 :
 				return 0;
 			default :
 				system(command);
 		}
+		printf("\n");
 	}
 	return 0;
 }
 
+//현재 위치 출력
 void mypwd(struct present_working_directory pwd){
 	int i;
 	for(i=0; i<10; i++){
@@ -197,6 +235,116 @@ void mypwd(struct present_working_directory pwd){
 		}
 	}
 }
+
+//블럭 리스트 출력
+void print_block_list(int n){
+	int i, j, block;
+
+	//싱글 인다이렉트 블럭에서
+	block = myfs.inode[n-1].sin;
+
+	if(block==0){
+		return;
+	}
+	else{
+		for(i=0; i<64; i++){
+			if(myfs.block[block-1].indirect.number[i]!=0){
+				printf(", %d", myfs.block[block-1].indirect.number[i]);
+			}
+			else{
+				return;
+			}
+		}
+	}
+
+	//더블 인다이렉트 블럭에서
+	for(j=0; j<64; j++){
+		block = myfs.block[myfs.inode[n-1].din-1].indirect.number[j];
+		if(block==0){
+			return;
+		}
+		else{
+			for(i=0; i<64; i++){
+				if(myfs.block[block-1].indirect.number[i]){
+					printf(", %d", myfs.block[block-1].indirect.number[i]);
+				}
+				else{
+					return;
+				}
+			}
+		}
+	}
+}
+
+//슈퍼블럭에 비트열로 추가
+void usage_plus(unsigned int c[], int n, int x){
+	int i, j, l = sizeof(int) * 8;
+	unsigned int mask = 1 << (l - 1);
+
+	for(i=0; i<n; i++){
+		for(j=0; j<l; j++){
+			if(x == (i * l + j + 1)){
+				mask >>= j;
+				c[i] = c[i] | mask;
+			}
+		}
+	}
+}
+
+//슈퍼블럭에 비트열로 제거
+void usage_minus(unsigned int c[], int n, int x){
+	int i, j, k ,l = sizeof(int) * 8;
+	unsigned int mask = 1 << (l = 1), minus = 1;
+
+	for(i=0; i<n; i++){
+		for(j=0; j<l; j++){
+			if(x == (i * l + j + 1)){
+				mask >>= j;
+				if((c[i] & mask) != 0){
+					for(k=0; k<l-j-1; k++){
+						minus *= 2;
+					}
+					c[i] -= minus;
+				}
+			}
+		}
+	}
+}
+
+//슈퍼블럭에서 가용 아이노드/데이터 블럭인지 확인
+int usage_check(unsigned int c[], int n, int x){
+	int i, j, k, l = sizeof(int) * 8;
+	unsigned int mask = 1 << (l - 1);
+
+	for(i=0; i<n; i++){
+		for(j=0; j<l; j++){
+			if( x == (i * l + j + 1)){
+				mask >>= j;
+				return ((c[i] & mask) != 0) ? 1 : 0;
+			}
+		}
+	}
+
+	return 0;
+}
+
+//몇개의 아이노드/데이터 블럭이 사용중인지 확인
+int usage_count(unsigned int c[], int n){
+	int a, i, j, count = 0, l = sizeof(int) * 8;
+	unsigned int mask = 1 << (l - 1);
+
+	for(i=0; i<n; i++){
+		a = c[i];
+		for(j=1; j<=l; j++){
+			if((a & mask) != 0){
+				count++;
+			}
+			a <<= 1;
+		}
+	}
+	return count;
+}
+
 
 
 
