@@ -55,6 +55,7 @@ struct linked{
 
 struct linked *list[1024];
 
+int find_file(struct inode_list *, char []);
 void myshowfile(int, int, char []);
 void print_byte(int, int, int);
 void mypwd(struct present_working_directory);
@@ -267,12 +268,19 @@ int main(){
 
 //myshowfile 함수
 void myshowfile(int num1, int num2, char file[]){
-	int check, i, j, k, n, block, list;
+	int n;
 	struct inode_list *inode;
 
 	n = where_i_am();
 	inode = &myfs.inode[n-1];
 
+	n = find_file(inode, file);
+	print_byte(num1, num2, n);
+}
+
+//파일의 아이노드 찾기
+int find_file(struct inode_list *inode, char file[]){
+	int i, j, k, n, check, block, list;
 
 	list = inode -> di;
 	//다이렉트 블럭에서
@@ -280,17 +288,16 @@ void myshowfile(int num1, int num2, char file[]){
 		check = strcmp(myfs.block[list-1].directory.name[i], "");
 		if(check==0){
 			printf("error : no such file1\n");
-			return;
+			return 0;
 		}
 		check = strcmp(myfs.block[list-1].directory.name[i], file);
 		if(check==0){
 			n = myfs.block[list-1].directory.number[i];
 			if(n==0){
 				printf("error : no such file2\n");
-				return;
+				return 0;
 			}
-			print_byte(num1, num2, n);
-			return;
+			return n;
 		}
 	}
 	//싱글 인다이렉트 블럭에서
@@ -300,16 +307,15 @@ void myshowfile(int num1, int num2, char file[]){
 		for(j=0; j<18; j++){
 			if(!strcmp(myfs.block[list-1].directory.name[i], "")){
 				printf("error : no such file\n");
-				return;
+				return 0;
 			}
 			if(!strcmp(myfs.block[list-1].directory.name[i], file)){
 				n = myfs.block[list-1].directory.number[i];
 				if(n==0){
 					printf("error : no such file\n");
-					return;
+					return 0;
 				}
-				print_byte(num1, num2, n);
-				return;
+				return n;
 			}
 		}
 	}
@@ -321,16 +327,15 @@ void myshowfile(int num1, int num2, char file[]){
 			for(k=0; k<18; k++){
 				if(!strcmp(myfs.block[list-1].directory.name[i], "")){
 					printf("error : no such file\n");
-					return;
+					return 0;
 				}
 				if(!strcmp(myfs.block[list-1].directory.name[i], file)){
 					n = myfs.block[list-1].directory.number[i];
 					if(n==0){
 						printf("error : no such file\n");
-						return;
+						return 0;
 					}
-					print_byte(num1, num2, n);
-					return;
+					return n;
 				}
 			}
 		}
