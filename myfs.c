@@ -53,15 +53,6 @@ struct linked{
 	struct linked *next;
 };
 
-<<<<<<< HEAD
-struct linked *list[1024];
-
-int find_file(struct inode_list *, char []);
-void myshowfile(int, int, char []);
-void print_byte(int, int, int);
-void mypwd(struct present_working_directory);
-void print_block_list(int);
-=======
 struct ls_list{
 	char name[4];
 	int inode;
@@ -85,19 +76,10 @@ void print_byte(int, int, int);
 void mypwd(struct present_working_directory);
 void myshowinode(int);
 
->>>>>>> origin/soonwook
 void usage_plus(unsigned int [], int, int);
 void usage_minus(unsigned int [], int, int);
 int usage_check(unsigned int [], int, int);
 int usage_count(unsigned int [], int n);
-<<<<<<< HEAD
-int where_i_am();
-
-int main(){
-	int i, n, m, shell = 0;
-	char mycmd[][12] = {"mymkfs", "myfs_shell", "myls", "mycat", "myshowfile", "mypwd", "mycd", "mycp", "mycpto", "mycpfrom", "mymkdir", "myrmdir", "myrm", "mymv", "mytouch", "myshowinode", "myshowblock", "mystate", "mytree", "byebye"};
-	char command[100], cmd[5][20];
-=======
 int where_i_am(struct present_working_directory);
 int get_inode();
 int get_block();
@@ -109,7 +91,6 @@ int main(){
 	int i, n, m;
 	char mycmd[][12] = {"mymkfs", "myfs_shell", "myls", "mycat", "myshowfile", "mypwd", "mycd", "mycp", "mycpto", "mycpfrom", "mymkdir", "myrmdir", "myrm", "mymv", "mytouch", "myshowinode", "myshowblock", "mystate", "mytree", "byebye"};
 	char command[150], cmd[5][30];
->>>>>>> origin/soonwook
 	time_t now = time(NULL);
 	FILE *save, *load;
 	struct inode_list *inode = NULL;
@@ -124,23 +105,14 @@ int main(){
 	inode->size = 0;
 	inode->time = localtime(&now);
 	inode->di = 1;
-<<<<<<< HEAD
-
-=======
->>>>>>> origin/soonwook
 	for(i=0; i<1024; i++){
 		list[i] = malloc(sizeof(struct linked));
 		list[i] -> number = i;
 		list[i] -> next = NULL;
 	}
-<<<<<<< HEAD
-	usage_plus(myfs.super.i_state, 16, 2);
-	usage_plus(myfs.super.d_state, 16, 2);
-=======
 
 	usage_plus(myfs.super.i_state, 16, 2);
 	usage_plus(myfs.super.d_state,32, 2);
->>>>>>> origin/soonwook
 	strcpy(myfs.block[0].directory.name[0], "abcd");
 	myfs.block[0].directory.number[0] = 2;
 	myfs.inode[1].type = 1;
@@ -150,27 +122,6 @@ int main(){
 	strcpy(temp, "ABCDEFGHIJKLMNOPQRSTUVWXYZ!");
 	strcpy(myfs.block[1].file.data, temp);
 	myfs.inode[1].size = sizeof(myfs.block[1].file.data);
-<<<<<<< HEAD
-	/*
-	   inode->sin = 2;
-	   inode->din = 67;
-	   for(i=0; i<18; i++){
-	   strcpy(myfs.block[0].directory.name[i], "abcd");
-	   myfs.block[0].directory.number[i] = 99;
-	   }
-	   for(i=0; i<64; i++){
-	   myfs.block[1].indirect.number[i] = i+3;
-	   }
-	   int j;
-	   for(i=0; i<64; i++){
-	   for(j=0; j<18; j++){
-	   strcpy(myfs.block[i+2].directory.name[j], "efgh");
-	   myfs.block[i+2].directory.number[j] = i+3;
-	   }
-	   }
-	   strcpy(myfs.block[5].directory.name[0], "find");
-	   myfs.block[5].directory.number[j] = 67;*/
-=======
 
 	usage_plus(myfs.super.i_state, 16, 3);
 	usage_plus(myfs.super.d_state,32, 3);
@@ -189,7 +140,6 @@ int main(){
 	myfs.inode[3].time = localtime(&now);
 	myfs.inode[3].di = 4;
 	myfs.inode[3].size = 0;
->>>>>>> origin/soonwook
 
 	//명령어 받기
 	while(1){
@@ -243,10 +193,7 @@ int main(){
 			}
 		}
 
-<<<<<<< HEAD
-=======
 		//명령어 해석
->>>>>>> origin/soonwook
 		switch(i){
 			//mkmyfs, myfs_shell
 			case 0 :
@@ -254,10 +201,7 @@ int main(){
 				break;
 				//myls
 			case 1 :
-<<<<<<< HEAD
-=======
 				myls(cmd[1]);
->>>>>>> origin/soonwook
 				break;
 				//mycat
 			case 2 :
@@ -313,22 +257,7 @@ int main(){
 				//myshowinode
 			case 14 :
 				n = atoi(cmd[1]);
-<<<<<<< HEAD
-				if(usage_check(myfs.super.i_state, 16, n)){
-					inode = &myfs.inode[n-1];
-					printf("file type : %s\n", (inode->type == 0) ? "directory" : "regular file");
-					printf("file size : %d byte\n", inode->size);
-					printf("modified time : %d/%d/%d %02d:%02d:%02d\n", inode->time->tm_year + 1900, inode->time->tm_mon + 1, inode->time->tm_mday, inode->time->tm_hour, inode->time->tm_min, inode->time->tm_sec);
-					printf("data block list : %d", inode->di);
-					print_block_list(n);
-					printf("\n");
-				}
-				else{
-					printf("error : empty inode\n");
-				}
-=======
 				myshowinode(n);
->>>>>>> origin/soonwook
 				break;
 				//myshowblock
 			case 15 :
@@ -360,78 +289,6 @@ int main(){
 	return 0;
 }
 
-<<<<<<< HEAD
-//myshowfile 함수
-void myshowfile(int num1, int num2, char file[]){
-	int n;
-	struct inode_list *inode;
-
-	n = where_i_am();
-	inode = &myfs.inode[n-1];
-
-	n = find_file(inode, file);
-	print_byte(num1, num2, n);
-}
-
-//파일의 아이노드 찾기
-int find_file(struct inode_list *inode, char file[]){
-	int i, j, k, n, check, block, list;
-
-	list = inode -> di;
-	//다이렉트 블럭에서
-	for(i=0; i<18; i++){
-		check = strcmp(myfs.block[list-1].directory.name[i], "");
-		if(check==0){
-			printf("error : no such file1\n");
-			return 0;
-		}
-		check = strcmp(myfs.block[list-1].directory.name[i], file);
-		if(check==0){
-			n = myfs.block[list-1].directory.number[i];
-			if(n==0){
-				printf("error : no such file2\n");
-				return 0;
-			}
-			return n;
-		}
-	}
-	//싱글 인다이렉트 블럭에서
-	block = inode -> sin;
-	for(i=0; i<64; i++){
-		list = myfs.block[block-1].indirect.number[i];
-		for(j=0; j<18; j++){
-			if(!strcmp(myfs.block[list-1].directory.name[i], "")){
-				printf("error : no such file\n");
-				return 0;
-			}
-			if(!strcmp(myfs.block[list-1].directory.name[i], file)){
-				n = myfs.block[list-1].directory.number[i];
-				if(n==0){
-					printf("error : no such file\n");
-					return 0;
-				}
-				return n;
-			}
-		}
-	}
-	//더블 인다이렉트 블럭에서
-	for(i=0; i<64; i++){
-		block = myfs.block[(inode -> din)-1].indirect.number[i];
-		for(j=0; j<64; j++){
-			list = myfs.block[block-1].indirect.number[i];
-			for(k=0; k<18; k++){
-				if(!strcmp(myfs.block[list-1].directory.name[i], "")){
-					printf("error : no such file\n");
-					return 0;
-				}
-				if(!strcmp(myfs.block[list-1].directory.name[i], file)){
-					n = myfs.block[list-1].directory.number[i];
-					if(n==0){
-						printf("error : no such file\n");
-						return 0;
-					}
-					return n;
-=======
 void myls(char option[]){
 	struct ls_list *head, *head2;
 	int n = where_i_am(pwd), i = 0, l = 0, k, count, a, b;
@@ -569,13 +426,10 @@ struct ls_list *ls_link(struct inode_list *inode){
 							break;
 						}
 					}
->>>>>>> origin/soonwook
 				}
 			}
 		}
 	}
-<<<<<<< HEAD
-=======
 
 	count++;
 	temp = ls_link(inode);
@@ -657,7 +511,6 @@ void myshowfile(int num1, int num2, char file[]){
 		return;
 	}
 	print_byte(num1, num2, n);
->>>>>>> origin/soonwook
 }
 
 //바이트단위 출력
@@ -665,20 +518,14 @@ void print_byte(int num1, int num2, int n){
 	int i, start1, start2, count, num;
 	union data_block *block;
 
-<<<<<<< HEAD
-=======
 	//시작위치 설정
->>>>>>> origin/soonwook
 	start1 = num1 / 128;
 	start2 = num1 % 128;
 	count = num2 - num1 + 1;
 	num = list[(myfs.inode[n-1].di)-1]->number;
 	block = &(myfs.block[num]);
 
-<<<<<<< HEAD
-=======
 	//시작위치 찾기
->>>>>>> origin/soonwook
 	while(1){
 		if(start1 == 0){
 			i = start2 - 1;
@@ -718,45 +565,6 @@ void mypwd(struct present_working_directory pwd){
 	}
 }
 
-<<<<<<< HEAD
-//블럭 리스트 출력
-void print_block_list(int n){
-	int i, j, block;
-
-	//싱글 인다이렉트 블럭에서
-	block = myfs.inode[n-1].sin;
-
-	if(block==0){
-		return;
-	}
-	else{
-		for(i=0; i<64; i++){
-			if(myfs.block[block-1].indirect.number[i]!=0){
-				printf(", %d", myfs.block[block-1].indirect.number[i]);
-			}
-			else{
-				return;
-			}
-		}
-	}
-
-	//더블 인다이렉트 블럭에서
-	for(j=0; j<64; j++){
-		block = myfs.block[myfs.inode[n-1].din-1].indirect.number[j];
-		if(block==0){
-			return;
-		}
-		else{
-			for(i=0; i<64; i++){
-				if(myfs.block[block-1].indirect.number[i]){
-					printf(", %d", myfs.block[block-1].indirect.number[i]);
-				}
-				else{
-					return;
-				}
-			}
-		}
-=======
 void myshowinode(int n){
 	struct inode_list *inode = NULL;
 
@@ -771,7 +579,6 @@ void myshowinode(int n){
 	}
 	else{
 		printf("error : empty inode\n");
->>>>>>> origin/soonwook
 	}
 }
 
@@ -844,14 +651,6 @@ int usage_count(unsigned int c[], int n){
 	return count;
 }
 
-<<<<<<< HEAD
-int where_i_am(){
-	int i;
-	for(i=0; i<10; i++){
-		if(!strcmp(pwd.name[i], "")){
-			i--;
-			return pwd.number[i];
-=======
 //현재 디렉터리의 아이노드 번호를 리턴
 int where_i_am(struct present_working_directory pwd_call){
 	int i;
@@ -1054,7 +853,6 @@ void print_block_list(int n){
 					return;
 				}
 			}
->>>>>>> origin/soonwook
 		}
 	}
 }
