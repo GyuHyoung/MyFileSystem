@@ -62,8 +62,15 @@ struct ls_list{
 	struct ls_list *next;
 };
 
+struct mytree{
+	char name[4];
+	int step;
+	struct mytree *next;
+	struct mytree *down;
+};
 
 struct linked *list[1024];
+struct mytree *tree;
 
 
 void myls(char []);
@@ -76,6 +83,7 @@ void print_byte(int, int, int);
 void mypwd(struct present_working_directory);
 void mycpto(char [], char []);
 void myshowinode(int);
+void mytree(struct mytree *);
 
 void usage_plus(unsigned int [], int, int);
 void usage_minus(unsigned int [], int, int);
@@ -87,6 +95,7 @@ int get_block();
 struct present_working_directory where_is_there(char []);
 int find_file(struct inode_list *, char []);
 void print_block_list(int);
+void tree_add(char [], char [], int, struct mytree *);
 
 int main(){
 	int i, n, m;
@@ -111,6 +120,11 @@ int main(){
 		list[i] -> number = i;
 		list[i] -> next = NULL;
 	}
+	tree = malloc(sizeof(struct mytree));
+	strcpy(tree->name, "/");
+	tree->step = 1;
+	tree->next = NULL;
+	tree->down = NULL;
 
 	usage_plus(myfs.super.i_state, 16, 2);
 	usage_plus(myfs.super.d_state,32, 2);
@@ -161,6 +175,10 @@ int main(){
 	myfs.inode[3].time = localtime(&now);
 	myfs.inode[3].di = 4;
 	myfs.inode[3].size = 0;
+
+	tree_add("abcd", "/", 2, tree);
+	tree_add("dire", "/", 2, tree);
+	tree_add("efg2", "/", 2, tree);
 
 	//명령어 받기
 	while(1){
@@ -297,7 +315,7 @@ int main(){
 				break;
 				//mytree
 			case 17 :
-				printf("case %d\n", i);
+				mytree(tree);
 				break;
 				//byebye
 			case 18 :
@@ -646,6 +664,28 @@ void myshowinode(int n){
 	}
 }
 
+//mytree 함수
+void mytree(struct mytree *check){
+	int i;
+
+	if(check == NULL){
+		return;
+	}
+	else{
+		if(check->step != 1){
+			printf("--");
+			for(i=0; i<(check->step)-2; i++){
+				printf("---");
+			}
+			printf("* ");
+		}
+		printf("%-4s\n", check->name);
+		mytree(check->down);
+		mytree(check->next);
+		return;
+	}
+}
+
 //슈퍼블럭에 비트열로 추가
 void usage_plus(unsigned int c[], int n, int x){
 	int i, j, l = sizeof(int) * 8;
@@ -921,6 +961,37 @@ void print_block_list(int n){
 	}
 }
 
+//mytree에 파일 더하기
+void tree_add(char name[], char up[], int step, struct mytree *check){
+	if(step == (check->step)+1){
+		if(!strcmp(check->name, up)){
+			if(check->down == NULL){
+				check->down = malloc(sizeof(struct mytree));
+				strcpy(check->down->name, name);
+				check->down->step = step;
+				check->down->next = NULL;
+				check->down->down = NULL;
+			}
+			else{
+				tree_add(name, up, step, check->down);
+			}
+			return;
+		}
+	}
+	if(step == check->step){
+		if(check->next == NULL){
+			check->next = malloc(sizeof(struct mytree));
+			strcpy(check->next->name, name);
+			check->next->step = step;
+			check->next->next = NULL;
+			check->next->down = NULL;
+		}
+		else{
+			tree_add(name, up, step, check->next);
+		}
+		return;
+	}
+}
 
 
 
