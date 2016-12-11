@@ -74,13 +74,21 @@ void ls_print(struct ls_list *, int, int);
 void myshowfile(int, int, char []);
 void print_byte(int, int, int);
 void mypwd(struct present_working_directory);
+<<<<<<< HEAD
+void mycpto(char [], char []);
+=======
+>>>>>>> refs/remotes/origin/master
 void myshowinode(int);
 
 void usage_plus(unsigned int [], int, int);
 void usage_minus(unsigned int [], int, int);
 int usage_check(unsigned int [], int, int);
 int usage_count(unsigned int [], int n);
+<<<<<<< HEAD
+int where_am_i(struct present_working_directory);
+=======
 int where_i_am(struct present_working_directory);
+>>>>>>> refs/remotes/origin/master
 int get_inode();
 int get_block();
 struct present_working_directory where_is_there(char []);
@@ -118,10 +126,34 @@ int main(){
 	myfs.inode[1].type = 1;
 	myfs.inode[1].time = localtime(&now);
 	myfs.inode[1].di = 2;
-	char temp[128];
-	strcpy(temp, "ABCDEFGHIJKLMNOPQRSTUVWXYZ!");
+	char temp[129];
+	strcpy(temp, "ABCDEFGHIJ12345678900987654321@!\n");
 	strcpy(myfs.block[1].file.data, temp);
+<<<<<<< HEAD
+	for(i=0; i<3; i++){
+		strcat(myfs.block[1].file.data, temp);
+	}
+	strcpy(myfs.block[5].file.data, "");
+	strcpy(myfs.block[5].file.data, "0987654321098765432109876543212\n");
+	for(i=0; i<3; i++){
+		strcat(myfs.block[5].file.data, "1234567890123456789012345678901\n");
+	}
+	usage_plus(myfs.super.d_state,32, 5);
+	usage_plus(myfs.super.d_state, 32, 6);
+	usage_plus(myfs.super.d_state,32, 7);
+	strcpy(myfs.block[6].file.data, temp);
+	strcat(myfs.block[6].file.data, temp);
+	myfs.inode[1].size = 300;
+	myfs.inode[1].sin = 5;
+	myfs.block[4].indirect.number[0] = 6;
+	myfs.block[4].indirect.number[1] = 7;
+	list[1]->number = 1;
+	list[1]->next = list[5];
+	list[5]->number = 5;
+	list[5]->next = list[6];
+=======
 	myfs.inode[1].size = sizeof(myfs.block[1].file.data);
+>>>>>>> refs/remotes/origin/master
 
 	usage_plus(myfs.super.i_state, 16, 3);
 	usage_plus(myfs.super.d_state,32, 3);
@@ -228,7 +260,7 @@ int main(){
 				break;
 				//mycpto
 			case 7 :
-				printf("case %d\n", i);
+				mycpto(cmd[1], cmd[2]);
 				break;
 				//mycpfrom
 			case 8 :
@@ -291,7 +323,11 @@ int main(){
 
 void myls(char option[]){
 	struct ls_list *head, *head2;
+<<<<<<< HEAD
+	int n = where_am_i(pwd), i = 0, l = 0, k, count, a, b;
+=======
 	int n = where_i_am(pwd), i = 0, l = 0, k, count, a, b;
+>>>>>>> refs/remotes/origin/master
 	struct inode_list *inode;
 	char opt[2] = {0};
 	
@@ -501,7 +537,11 @@ void myshowfile(int num1, int num2, char file[]){
 	char name[4] = {0};
 	struct inode_list *inode;
 
+<<<<<<< HEAD
+	n = where_am_i(pwd);
+=======
 	n = where_i_am(pwd);
+>>>>>>> refs/remotes/origin/master
 	inode = &myfs.inode[n-1];
 	sscanf(file, "%4s", name);
 
@@ -565,6 +605,66 @@ void mypwd(struct present_working_directory pwd){
 	}
 }
 
+<<<<<<< HEAD
+//mycpto 함수
+void mycpto(char file[], char save[]){
+	char temp[128] = {0};
+	int i, n, check, f_size, num_block, num_block_remain;
+	FILE *cpsave;
+	struct inode_list *inode;
+
+	n = where_am_i(pwd);
+	inode = &myfs.inode[n-1];
+	sscanf(file, "%4s", file);
+	check = find_file(inode, file);
+	if(check == 0){
+		printf("error : no such file\n");
+		return;
+	}
+	else if(myfs.inode[check-1].type == 0){
+		printf("error : %s is not regular file\n", file);
+		return;
+	}
+	else{
+		if((cpsave = fopen(save, "wb")) == NULL){
+			printf("error : cannot open %s on host file system\n", save);
+			return;
+		}
+		else{
+			f_size = myfs.inode[check-1].size;
+			num_block = f_size / 128;
+			num_block_remain = f_size % 128;
+			n = (myfs.inode[check-1].di)-1;
+			for(i=0; i<num_block; i++){
+				fwrite(myfs.block[n].file.data, 128, 1, cpsave);
+				n = list[n]->next->number;
+			}
+			for(i=0; i<num_block_remain; i++){
+			fwrite(&myfs.block[n].file.data[i], 1, 1, cpsave);
+			}
+			fclose(cpsave);
+			return;
+		}
+=======
+void myshowinode(int n){
+	struct inode_list *inode = NULL;
+
+	if(usage_check(myfs.super.i_state, 16, n)){
+		inode = &myfs.inode[n-1];
+		printf("file type : %s\n", (inode->type == 0) ? "directory" : "regular file");
+		printf("file size : %d byte\n", inode->size);
+		printf("modified time : %d/%d/%d %02d:%02d:%02d\n", inode->time->tm_year + 1900, inode->time->tm_mon + 1, inode->time->tm_mday, inode->time->tm_hour, inode->time->tm_min, inode->time->tm_sec);
+		printf("data block list : %d", inode->di);
+		print_block_list(n);
+		printf("\n");
+	}
+	else{
+		printf("error : empty inode\n");
+>>>>>>> refs/remotes/origin/master
+	}
+}
+
+//myshowinode 함수
 void myshowinode(int n){
 	struct inode_list *inode = NULL;
 
@@ -652,7 +752,11 @@ int usage_count(unsigned int c[], int n){
 }
 
 //현재 디렉터리의 아이노드 번호를 리턴
+<<<<<<< HEAD
+int where_am_i(struct present_working_directory pwd_call){
+=======
 int where_i_am(struct present_working_directory pwd_call){
+>>>>>>> refs/remotes/origin/master
 	int i;
 	for(i=0; i<10; i++){
 		if(!strcmp(pwd_call.name[i], "")){
@@ -722,7 +826,11 @@ struct present_working_directory where_is_there(char location[]){
 	}
 
 	for(i=0; i<5; i++){
+<<<<<<< HEAD
+		loc = where_am_i(pwd_result);
+=======
 		loc = where_i_am(pwd_result);
+>>>>>>> refs/remotes/origin/master
 		//끝이면
 		if(!strcmp(step[i], "")){
 			return pwd_result;
