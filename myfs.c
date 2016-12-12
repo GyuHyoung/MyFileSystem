@@ -14,7 +14,7 @@ struct inode_list{
 	unsigned sin : 10;
 	unsigned din : 10;
 	int size;
-	struct tm *time;
+	struct tm time;
 };
 
 struct file_info{
@@ -44,7 +44,7 @@ struct my_file_system{
 }myfs;
 
 struct present_working_directory{
-	char name[10][4];
+	char name[10][5];
 	char number[10];
 }pwd;
 
@@ -58,7 +58,7 @@ struct ls_list{
 	int inode;
 	int type;
 	int size;
-	struct tm *time;
+	struct tm time;
 	struct ls_list *next;
 };
 
@@ -69,10 +69,11 @@ struct mytree{
 	struct mytree *down;
 };
 
-struct linked *list[1024];
+struct linked *tlist[1024];
 struct mytree *tree;
 
 
+void mycat(char [], char [], char []);
 void myls(char []);
 struct ls_list *ls_link(struct inode_list *);
 int ls_count(struct ls_list *);
@@ -81,7 +82,13 @@ void ls_print(struct ls_list *, int, int);
 void myshowfile(int, int, char []);
 void print_byte(int, int, int);
 void mypwd(struct present_working_directory);
+void mycp(char[], char[]);
 void mycpto(char [], char []);
+void mycpfrom(char [], char []);
+void mymkdir(char []);
+void myrmdir(char []);
+void myrm(char []);
+void mytouch(char []);
 void myshowinode(int);
 void mytree(struct mytree *);
 
@@ -94,8 +101,12 @@ int get_inode();
 int get_block();
 struct present_working_directory where_is_there(char []);
 int find_file(struct inode_list *, char []);
+int del_file(struct inode_list *, char []);
 void print_block_list(int);
-void tree_add(char [], char [], int, struct mytree *);
+void tree_add(char [], int, struct present_working_directory, struct mytree *);
+void tree_del(char [], int, struct present_working_directory, struct mytree *);
+
+static int del_down = 1, del_next = 0;
 
 int main(){
 	int i, n, m;
@@ -113,72 +124,17 @@ int main(){
 	inode = &myfs.inode[0];
 	inode->type = 0;
 	inode->size = 0;
-	inode->time = localtime(&now);
+	inode->time = *localtime(&now);
 	inode->di = 1;
 	for(i=0; i<1024; i++){
-		list[i] = malloc(sizeof(struct linked));
-		list[i] -> number = i;
-		list[i] -> next = NULL;
+		tlist[i] = malloc(sizeof(struct linked));
+		tlist[i] -> number = i;
+		tlist[i] -> next = NULL;
 	}
 	tree = malloc(sizeof(struct mytree));
 	strcpy(tree->name, "/");
 	tree->step = 1;
 	tree->next = NULL;
-	tree->down = NULL;
-
-	usage_plus(myfs.super.i_state, 16, 2);
-	usage_plus(myfs.super.d_state,32, 2);
-	strcpy(myfs.block[0].directory.name[0], "abcd");
-	myfs.block[0].directory.number[0] = 2;
-	myfs.inode[1].type = 1;
-	myfs.inode[1].time = localtime(&now);
-	myfs.inode[1].di = 2;
-	char temp[129];
-	strcpy(temp, "ABCDEFGHIJ12345678900987654321@!\n");
-	strcpy(myfs.block[1].file.data, temp);
-	for(i=0; i<3; i++){
-		strcat(myfs.block[1].file.data, temp);
-	}
-	strcpy(myfs.block[5].file.data, "");
-	strcpy(myfs.block[5].file.data, "0987654321098765432109876543212\n");
-	for(i=0; i<3; i++){
-		strcat(myfs.block[5].file.data, "1234567890123456789012345678901\n");
-	}
-	usage_plus(myfs.super.d_state,32, 5);
-	usage_plus(myfs.super.d_state, 32, 6);
-	usage_plus(myfs.super.d_state,32, 7);
-	strcpy(myfs.block[6].file.data, temp);
-	strcat(myfs.block[6].file.data, temp);
-	myfs.inode[1].size = 300;
-	myfs.inode[1].sin = 5;
-	myfs.block[4].indirect.number[0] = 6;
-	myfs.block[4].indirect.number[1] = 7;
-	list[1]->number = 1;
-	list[1]->next = list[5];
-	list[5]->number = 5;
-	list[5]->next = list[6];
-
-	usage_plus(myfs.super.i_state, 16, 3);
-	usage_plus(myfs.super.d_state,32, 3);
-	strcpy(myfs.block[0].directory.name[1], "dire");
-	myfs.block[0].directory.number[1] = 3;
-	myfs.inode[2].type = 0;
-	myfs.inode[2].time = localtime(&now);
-	myfs.inode[2].di = 3;
-	myfs.inode[2].size = 0;
-
-	usage_plus(myfs.super.i_state, 16, 4);
-	usage_plus(myfs.super.d_state,32, 4);
-	strcpy(myfs.block[0].directory.name[2], "efg2");
-	myfs.block[0].directory.number[2] = 4;
-	myfs.inode[3].type = 0;
-	myfs.inode[3].time = localtime(&now);
-	myfs.inode[3].di = 4;
-	myfs.inode[3].size = 0;
-
-	tree_add("abcd", "/", 2, tree);
-	tree_add("dire", "/", 2, tree);
-	tree_add("efg2", "/", 2, tree);
 
 	//명령어 받기
 	while(1){
@@ -244,7 +200,7 @@ int main(){
 				break;
 				//mycat
 			case 2 :
-				printf("case %d\n", i);
+				mycat(cmd[1], cmd[2], cmd[3]);
 				break;
 				//myshowfile
 			case 3 :
@@ -263,7 +219,7 @@ int main(){
 				break;
 				//mycp
 			case 6 :
-				printf("case %d\n", i);
+				printf("mycp is not ready\n");
 				break;
 				//mycpto
 			case 7 :
@@ -271,27 +227,27 @@ int main(){
 				break;
 				//mycpfrom
 			case 8 :
-				printf("case %d\n", i);
+				mycpfrom(cmd[1], cmd[2]);
 				break;
 				//mymkdir
 			case 9 :
-				printf("case %d\n", i);
+				mymkdir(cmd[1]);
 				break;
 				//myrmdir
 			case 10 :
-				printf("case %d\n", i);
+				myrmdir(cmd[1]);
 				break;
 				//myrm
 			case 11 :
-				printf("case %d\n", i);
+				myrm(cmd[1]);
 				break;
 				//mymv
 			case 12 :
-				printf("case %d\n", i);
+				printf("mymv is not ready\n");
 				break;
 				//mytouch
 			case 13 :
-				printf("case %d\n", i);
+				mytouch(cmd[1]);
 				break;
 				//myshowinode
 			case 14 :
@@ -328,12 +284,47 @@ int main(){
 	return 0;
 }
 
+//mycat 함수
+void mycat(char name[], char option[], char file[]){
+	int n, check, last;
+	struct inode_list *inode;
+
+	n = where_am_i(pwd);
+	inode = &myfs.inode[n-1];
+	check = find_file(inode, name);
+	
+	if(check == 0){
+		printf("error : no such file\n");
+		return;
+	}
+	else if(myfs.inode[check-1].type == 0){
+		printf("error : %s is not regular file\n", name);
+		return;
+	}
+	else if(!strcmp(option, "")){
+		last = inode->size % 128;
+		n = tlist[(myfs.inode[check-1].di)-1] -> number;
+		while(1){
+			if(tlist[n]->next == NULL){
+				for(int i=0; i<last; i++){
+					printf("%c", myfs.block[n].file.data[i]);
+				}
+				return;
+			}
+			printf("%s", myfs.block[n].file.data);
+			n = tlist[n] -> next -> number;
+		}
+	}
+}
+
+//myls 함수
 void myls(char option[]){
 	struct ls_list *head, *head2;
 	int n = where_am_i(pwd), i = 0, l = 0, k, count, a, b;
 	struct inode_list *inode;
 	char opt[2] = {0};
-	
+
+	//옵션 구분하기
 	if(!strcmp(option, "-il") || !strcmp(option, "-li")){
 		i = 1;
 		l = 1;
@@ -345,7 +336,8 @@ void myls(char option[]){
 		l = 1;
 	}
 	inode = &myfs.inode[n-1];
-	
+
+	//현재 디렉터리와 이전 디렉터리를 나타내는 자기참조구조체 생성
 	head = malloc(sizeof(struct ls_list));
 	head2 = malloc(sizeof(struct ls_list));
 	strcpy(head -> name, ".");
@@ -369,14 +361,17 @@ void myls(char option[]){
 	head2 -> type = 0;
 	head2 -> size = 0;
 	head2 -> time = myfs.inode[head2->inode-1].time;
-	
+
+	//나머지 링크 연결하기
 	head2 -> next = ls_link(inode);
 	count = ls_count(head);
+	//정렬하기
 	ls_sort(head, count);
-
+	//출력하기
 	ls_print(head, i, l);
 }
 
+//myls 리스트 만들기
 struct ls_list *ls_link(struct inode_list *inode){
 	int i, j, k, list, check, block;
 	static int count = 0;
@@ -395,9 +390,9 @@ struct ls_list *ls_link(struct inode_list *inode){
 					temp = malloc(sizeof(struct ls_list));
 					strcpy(temp -> name, myfs.block[list-1].directory.name[i]);
 					temp -> inode = myfs.block[list-1].directory.number[i];
-					temp -> type = myfs.inode[temp->inode-1].type;
-					temp -> size = myfs.inode[temp->inode-1].size;
-					temp -> time = myfs.inode[temp->inode-1].time;
+					temp -> type = myfs.inode[(temp->inode)-1].type;
+					temp -> size = myfs.inode[(temp->inode)-1].size;
+					temp -> time = myfs.inode[(temp->inode)-1].time;
 					count++;
 					temp -> next = ls_link(inode);
 					return temp;
@@ -469,12 +464,12 @@ struct ls_list *ls_link(struct inode_list *inode){
 			}
 		}
 	}
-
 	count++;
 	temp = ls_link(inode);
 	return temp;
 }
 
+//myls 파일/디렉터리 개수 세기
 int ls_count(struct ls_list *head){
 	int i = 1;
 	if(head == NULL){
@@ -483,6 +478,7 @@ int ls_count(struct ls_list *head){
 	return (1 + ls_count(head -> next));
 }
 
+//myls 정렬 함수
 void ls_sort(struct ls_list *head, int count){
 	int i, j;
 	struct ls_list *a = head, *b = head, *temp = malloc(sizeof(struct ls_list));
@@ -517,6 +513,7 @@ void ls_sort(struct ls_list *head, int count){
 	}
 }
 
+//myls 출력하기
 void ls_print(struct ls_list *head, int i, int l){
 	if(head == NULL){
 		return;
@@ -527,7 +524,7 @@ void ls_print(struct ls_list *head, int i, int l){
 	if(l){
 		printf("%c ", (head -> type) ? '-' : 'd');
 		printf("%5d ", head -> size);
-		printf("%d/%d/%d %02d:%02d:%02d ", head->time->tm_year + 1900, head->time->tm_mon + 1, head->time->tm_mday, head->time->tm_hour, head->time->tm_min, head->time->tm_sec);
+		printf("%d/%d/%d %02d:%02d:%02d ", head->time.tm_year + 1900, head->time.tm_mon + 1, head->time.tm_mday, head->time.tm_hour, head->time.tm_min, head->time.tm_sec);
 	}
 	printf("%-4s\n", head->name);
 
@@ -561,7 +558,7 @@ void print_byte(int num1, int num2, int n){
 	start1 = num1 / 128;
 	start2 = num1 % 128;
 	count = num2 - num1 + 1;
-	num = list[(myfs.inode[n-1].di)-1]->number;
+	num = tlist[(myfs.inode[n-1].di)-1]->number;
 	block = &(myfs.block[num]);
 
 	//시작위치 찾기
@@ -574,7 +571,7 @@ void print_byte(int num1, int num2, int n){
 					return;
 				}
 				if(i==128){
-					num = list[num] -> next -> number;
+					num = tlist[num] -> next -> number;
 					block = &(myfs.block[num]);
 					i = 0;
 				}
@@ -584,7 +581,7 @@ void print_byte(int num1, int num2, int n){
 			}
 		}
 		else{
-			num = list[num] -> next -> number;
+			num = tlist[num] -> next -> number;
 			block = &(myfs.block[num]);
 			start1--;
 		}
@@ -604,6 +601,11 @@ void mypwd(struct present_working_directory pwd){
 	}
 }
 
+//mycp 함수
+void mycp(char load[], char save[]){
+
+}
+
 //mycpto 함수
 void mycpto(char file[], char save[]){
 	char temp[128] = {0};
@@ -611,6 +613,7 @@ void mycpto(char file[], char save[]){
 	FILE *cpsave;
 	struct inode_list *inode;
 
+	//myfs안의  파일 정보 가져오기
 	n = where_am_i(pwd);
 	inode = &myfs.inode[n-1];
 	sscanf(file, "%4s", file);
@@ -624,6 +627,7 @@ void mycpto(char file[], char save[]){
 		return;
 	}
 	else{
+		//파일 저장하기
 		if((cpsave = fopen(save, "wb")) == NULL){
 			printf("error : cannot open %s on host file system\n", save);
 			return;
@@ -635,15 +639,632 @@ void mycpto(char file[], char save[]){
 			n = (myfs.inode[check-1].di)-1;
 			for(i=0; i<num_block; i++){
 				fwrite(myfs.block[n].file.data, 128, 1, cpsave);
-				n = list[n]->next->number;
+				n = tlist[n]->next->number;
 			}
 			for(i=0; i<num_block_remain; i++){
-			fwrite(&myfs.block[n].file.data[i], 1, 1, cpsave);
+				fwrite(&myfs.block[n].file.data[i], 1, 1, cpsave);
 			}
 			fclose(cpsave);
 			return;
 		}
 	}
+}
+
+//mycpfrom 함수
+void mycpfrom(char load[], char file[]){
+	char temp[128] = {0};
+	int i, j, k, l, n, check, list, block, number, number2, f_size, num_block, num_block_remain;
+	FILE *cpload;
+	struct inode_list *inode;
+	time_t now = time(NULL);
+
+	n = where_am_i(pwd);
+	inode = &myfs.inode[n-1];
+	sscanf(file, "%4s", file);
+	check = find_file(inode, file);
+	if(check != 0){
+		printf("error : %s already exists\n", file);
+		return;
+	}
+	else if((cpload = fopen(load, "rb")) == NULL){
+		printf("error : cannot open %s on host file system\n", load);
+		return;
+	}
+	else{
+		//파일의 기본정보 갖고오기
+		fseek(cpload, 0, SEEK_END);
+		f_size = ftell(cpload);
+		num_block = f_size / 128;
+		num_block_remain = f_size % 128;
+		rewind(cpload);
+		number = get_inode();
+		number2 = get_block();
+		//다이렉트 블럭에서
+		list = inode -> di;
+		for(i=0; i<18; i++){
+			if(!strcmp(myfs.block[list-1].directory.name[i], "")){
+				strcpy(myfs.block[list-1].directory.name[i], file);
+				myfs.block[list-1].directory.number[i] = number+1;
+				myfs.inode[number].type = 1;
+				myfs.inode[number].size = f_size;
+				myfs.inode[number].time = *localtime(&now);
+				myfs.inode[number].di = number2+1;
+				if(num_block != 0){
+					check = fread(&temp, 128, 1, cpload);
+					strcpy(myfs.block[number2].file.data, temp);
+					num_block--;
+				}
+				else{
+					for(l=0; l<num_block_remain; l++){
+						myfs.block[number2].file.data[l] = temp[l];
+					}
+					for(i=0; i<10; i++){
+						if(!strcmp(pwd.name[i], "")){
+							i = i - 1;
+							break;
+						}
+					}
+					tree_add(file, i, pwd, tree);
+					return;
+				}
+				if(num_block != 0){
+					myfs.inode[number].sin = get_block()+1;
+					for(int m=0; m<64; m++){
+						myfs.block[(myfs.inode[number].sin)-1].indirect.number[m] = 0;
+					}
+					for(l=0; l<64; l++){
+						block = get_block();
+						myfs.block[(myfs.inode[number].sin)-1].indirect.number[l] = block+1;
+						if(l == 0){
+							tlist[(myfs.inode[number].di)-1] -> next = tlist[block];
+						}
+						else{
+							tlist[(myfs.block[(myfs.inode[number].sin)-1].indirect.number[l-1])-1] -> next = tlist[block];
+						}
+						check = fread(temp, 128, 1, cpload);
+						strcpy(myfs.block[block].file.data, temp);
+						num_block--;
+						if(num_block == 0){
+							block = get_block();
+							myfs.block[(myfs.inode[number].sin)-1].indirect.number[l+1] = block+1;
+							if(l == 0){
+								tlist[myfs.block[(myfs.inode[number].sin)-1].indirect.number[l]] -> next = tlist[block];
+								tlist[block]->next = NULL;
+							}
+							else{
+								tlist[(myfs.block[(myfs.inode[number].sin)-1].indirect.number[l])-1] -> next = tlist[block];
+							}
+							check = fread(temp, num_block_remain, 1, cpload);
+							for(l=0; l<num_block_remain; l++){
+								myfs.block[block].file.data[l] = temp[l];
+							}
+							for(i=0; i<10; i++){
+								if(!strcmp(pwd.name[i], "")){
+									i++;
+									break;
+								}
+							}
+							tree_add(file, i, pwd, tree);
+							return;
+						}
+					}
+				}
+			}
+		}
+		//싱글 인다이렉트 블럭에서
+		block = inode -> sin;
+		if(block == 0){
+			block = get_block()+1;
+			inode->sin = block;
+			for(i=0; i<64; i++){
+				myfs.block[block-1].indirect.number[i] = 0;
+			}
+		}
+		for(i=0; i<64; i++){
+			list = myfs.block[block-1].indirect.number[i];
+			if(list == 0){
+				block = get_block()+1;
+				if(i==0){
+					tlist[(inode->di)-1]->next = tlist[block-1];
+				}
+				else{
+					tlist[myfs.block[block-1].indirect.number[i-1]]->next = tlist[block-1];
+				}
+				for(l=0; l<18; l++){
+					myfs.block[block-1].directory.number[l] = 0;
+					strcpy(myfs.block[block-1].directory.name[l], "");
+				}
+			}
+			for(j=0; j<18; j++){
+				if(!strcmp(myfs.block[list-1].directory.name[j], "")){
+					strcpy(myfs.block[list-1].directory.name[j], file);
+					myfs.block[list-1].directory.number[j] = number+1;
+					myfs.block[list-1].directory.number[i] = number+1;
+					myfs.inode[number].type = 1;
+					myfs.inode[number].size = f_size;
+					myfs.inode[number].time = *localtime(&now);
+					myfs.inode[number].di = number2+1;
+					if(num_block != 0){
+						check = fread(temp, 128, 1, cpload);
+						strcpy(myfs.block[number2].file.data, temp);
+						num_block--;
+					}
+					else{
+						for(l=0; l<num_block_remain; l++){
+							myfs.block[number2].file.data[l] = temp[l];
+						}
+						for(i=0; i<10; i++){
+							if(!strcmp(pwd.name[i], "")){
+								i++;
+								break;
+							}
+						}
+						tree_add(file, i, pwd, tree);
+						return;
+					}
+					if(num_block != 0){
+						myfs.inode[number].sin = get_block()+1;
+						for(int m=0; m<64; m++){
+							myfs.block[(myfs.inode[number].sin)-1].indirect.number[m] = 0;
+						}
+						for(l=0; l<64; l++){
+							block = get_block();
+							myfs.block[(myfs.inode[number].sin)-1].indirect.number[l] = block+1;
+							if(l == 0){
+								tlist[(myfs.inode[number].di)-1] -> next = tlist[block];
+							}
+							else{
+								tlist[(myfs.block[(myfs.inode[number].sin)-1].indirect.number[l-1])-1] -> next = tlist[block];
+							}
+							check = fread(temp, 128, 1, cpload);
+							strcpy(myfs.block[block].file.data, temp);
+							num_block--;
+							if(num_block == 0){
+								block = get_block();
+								myfs.block[(myfs.inode[number].sin)-1].indirect.number[l+1] = block+1;
+								if(l == 0){
+									tlist[myfs.block[(myfs.inode[number].sin)-1].indirect.number[l]] -> next = tlist[block];
+									tlist[block]->next = NULL;
+								}
+								else{
+									tlist[(myfs.block[(myfs.inode[number].sin)-1].indirect.number[l])-1] -> next = tlist[block];
+								}
+								check = fread(temp, num_block_remain, 1, cpload);
+								for(l=0; l<num_block_remain; l++){
+									myfs.block[block].file.data[l] = temp[l];
+								}
+								for(i=0; i<10; i++){
+									if(!strcmp(pwd.name[i], "")){
+										i++;
+										break;
+									}
+								}
+								tree_add(file, i, pwd, tree);
+								return;
+							}
+						}
+						return;
+					}
+				}
+			}
+		}
+		//더블 인다이렉트 블럭에서
+		if(inode->din == 0){
+			inode->din = get_block()+1;
+			for(i=0; i<64; i++){
+				myfs.block[(inode->din)-1].indirect.number[i] = 0;
+			}
+		}
+		printf("error : cannot save file\n");
+		return;
+		for(i=0; i<64; i++){
+			block = myfs.block[(inode->din)-1].indirect.number[i];
+			if(block = 0){
+				block = get_block();
+				for(l=0; l<64; l++){
+					myfs.block[block-1].indirect.number[l] = 0;
+				}
+			}
+			for(j=0; j<64; j++){
+				list = myfs.block[block-1].indirect.number[j];
+				if(list == 0){
+					list = get_block()+1;
+					if(j==0){
+						tlist[(inode->di)-1]->next = tlist[block-1];
+					}
+					else{
+						tlist[myfs.block[block-1].indirect.number[j-1]]->next = tlist[block-1];
+					}
+					for(l=0; l<18; l++){
+						myfs.block[block-1].directory.number[l] = 0;
+						strcpy(myfs.block[block-1].directory.name[l], "");
+					}
+				}
+				for(k=0; k<18; k++){
+					if(!strcmp(myfs.block[list-1].directory.name[k], "")){
+						strcpy(myfs.block[list-1].directory.name[k], file);
+						myfs.block[list-1].directory.number[k] = number+1;
+						myfs.inode[number].type = 1;
+						myfs.inode[number].size = f_size;
+						myfs.inode[number].time = *localtime(&now);
+						myfs.inode[number].di = number2+1;
+						return;
+					}
+				}
+			}
+		}
+	}
+}
+
+//mymkdir 함수
+void mymkdir(char name[]){
+	int n, i, j, k, l, check, block, list, number, number2;
+	struct inode_list *inode;
+	time_t now = time(NULL);
+
+	n = where_am_i(pwd);
+	inode = &myfs.inode[n-1];
+	sscanf(name, "%4s", name);
+	check = find_file(inode, name);
+	if(check != 0){
+		printf("error : %s already exists\n", name);
+		return;
+	}
+	else{
+		number = get_inode();
+		number2 = get_block();
+		//다이렉트 블럭에서
+		list = inode -> di;
+		for(i=0; i<18; i++){
+			if(!strcmp(myfs.block[list-1].directory.name[i], "")){
+				strcpy(myfs.block[list-1].directory.name[i], name);
+				myfs.block[list-1].directory.number[i] = number+1;
+				myfs.inode[number].type = 0;
+				myfs.inode[number].size = 0;
+				myfs.inode[number].time = *localtime(&now);
+				myfs.inode[number].di = number2+1;
+				for(i=0; i<18; i++){
+					strcpy(myfs.block[number2].directory.name[i], "");
+					myfs.block[number2].directory.number[i] = 0;
+				}
+				for(i=0; i<10; i++){
+					if(!strcmp(pwd.name[i], "")){
+						i++;
+						break;
+					}
+				}
+				tree_add(name, i, pwd, tree);
+				return;
+			}
+		}
+		//싱글 인다이렉트 블럭에서
+		block = inode -> sin;
+		if(block == 0){
+			block = get_block()+1;
+			inode->sin = block;
+			for(i=0; i<64; i++){
+				myfs.block[block-1].indirect.number[i] = 0;
+			}
+		}
+		for(i=0; i<64; i++){
+			list = myfs.block[block-1].indirect.number[i];
+			if(list == 0){
+				block = get_block()+1;
+				if(i==0){
+					tlist[(inode->di)-1]->next = tlist[block-1];
+				}
+				else{
+					tlist[myfs.block[block-1].indirect.number[i-1]]->next = tlist[block-1];
+				}
+				for(l=0; l<18; l++){
+					myfs.block[block-1].directory.number[l] = 0;
+					strcpy(myfs.block[block-1].directory.name[l], "");
+				}
+			}
+			for(j=0; j<18; j++){
+				if(!strcmp(myfs.block[list-1].directory.name[j], "")){
+					strcpy(myfs.block[list-1].directory.name[j], name);
+					myfs.block[list-1].directory.number[j] = number+1;
+					myfs.inode[number].type = 0;
+					myfs.inode[number].size = 0;
+					myfs.inode[number].time = *localtime(&now);
+					myfs.inode[number].di = number2+1;
+					for(i=0; i<18; i++){
+						strcpy(myfs.block[number2].directory.name[i], "");
+						myfs.block[number2].directory.number[i] = 0;
+					}
+					for(i=0; i<10; i++){
+						if(!strcmp(pwd.name[i], "")){
+							i++;
+							break;
+						}
+					}
+					tree_add(name, i, pwd, tree);
+					return;
+				}
+			}
+		}
+		//더블 인다이렉트 블럭에서
+		if(inode->din == 0){
+			inode->din = get_block()+1;
+			for(i=0; i<64; i++){
+				myfs.block[(inode->din)-1].indirect.number[i] = 0;
+			}
+		}
+		for(i=0; i<64; i++){
+			block = myfs.block[(inode->din)-1].indirect.number[i];
+			if(block = 0){
+				block = get_block();
+				for(l=0; l<64; l++){
+					myfs.block[block-1].indirect.number[l] = 0;
+				}
+			}
+			for(j=0; j<64; j++){
+				list = myfs.block[block-1].indirect.number[j];
+				if(list == 0){
+					list = get_block()+1;
+					if(j==0){
+						tlist[(inode->di)-1]->next = tlist[block-1];
+					}
+					else{
+						tlist[myfs.block[block-1].indirect.number[j-1]]->next = tlist[block-1];
+					}
+					for(l=0; l<18; l++){
+						myfs.block[block-1].directory.number[l] = 0;
+						strcpy(myfs.block[block-1].directory.name[l], "");
+					}
+				}
+				for(k=0; k<18; k++){
+					if(!strcmp(myfs.block[list-1].directory.name[k], "")){
+						strcpy(myfs.block[list-1].directory.name[k], name);
+						myfs.block[list-1].directory.number[k] = number+1;
+						myfs.inode[number].type = 0;
+						myfs.inode[number].size = 0;
+						myfs.inode[number].time = *localtime(&now);
+						myfs.inode[number].di = number2+1;
+						for(i=0; i<18; i++){
+							strcpy(myfs.block[number2].directory.name[i], "");
+							myfs.block[number2].directory.number[i] = 0;
+						}
+						for(i=0; i<10; i++){
+							if(!strcmp(pwd.name[i], "")){
+								i++;
+								break;
+							}
+						}
+						tree_add(name, i, pwd, tree);
+						return;
+					}
+				}
+			}
+		}
+	}
+}
+
+//myrmdir 함수
+void myrmdir(char file[]){
+	int i, n, check;
+	struct inode_list *inode, i_clear;
+	union data_block d_clear;
+	struct ls_list *temp = malloc(sizeof(struct ls_list));
+
+
+	i_clear.type = 0;
+	i_clear.size = 0;
+	i_clear.di = 0;
+	i_clear.sin = 0;
+	i_clear.din = 0;
+	strcpy(d_clear.file.data, "");
+
+	//파일이 있는지 확인
+	n = where_am_i(pwd);
+	inode = &myfs.inode[n-1];
+	sscanf(file, "%4s", file);
+	check = find_file(inode, file);
+	if(check == 0){
+		printf("error : no such directory\n");
+		return;
+	}
+	else if(myfs.inode[check-1].type == 1){
+		printf("error : %s is a file\n", file);
+		return;
+	}
+	else{
+		//파일 제거
+		temp -> next = ls_link(&myfs.inode[check-1]);
+		if(temp -> next != NULL){
+			printf("error : %s is not empty\n", file);
+			return;
+		}
+		usage_minus(myfs.super.i_state, 16, check);
+		usage_minus(myfs.super.d_state, 32, myfs.inode[check-1].di);
+		n = tlist[myfs.block[(myfs.inode[check-1].sin)-1].indirect.number[0]]->number;
+		while(1){
+			usage_minus(myfs.super.d_state, 32, n+1);
+			myfs.block[n] = d_clear;
+			if(tlist[n] -> next == NULL){
+				break;
+			}
+			check = tlist[n] -> next -> number;
+			tlist[n] -> next = NULL;
+			n = check;
+		}
+		for(i=0; i<10; i++){
+			if(!strcmp(pwd.name[i], "")){
+				i++;
+				break;
+			}
+		}
+		tree_del(file, i, pwd, tree);
+	}
+}
+
+//myrm 함수
+void myrm(char file[]){
+	int i, n, check;
+	struct inode_list *inode, i_clear;
+	union data_block d_clear;
+
+	i_clear.type = 0;
+	i_clear.size = 0;
+	i_clear.di = 0;
+	i_clear.sin = 0;
+	i_clear.din = 0;
+	strcpy(d_clear.file.data, "");
+
+	//파일이 있는지 확인
+	n = where_am_i(pwd);
+	inode = &myfs.inode[n-1];
+	sscanf(file, "%4s", file);
+	check = del_file(inode, file);
+	if(check == 0){
+		printf("error : no such file\n");
+		return;
+	}
+	else if(myfs.inode[check-1].type == 0){
+		printf("error : %s is a directory\n", file);
+		return;
+	}
+	else{
+		//파일 제거
+		usage_minus(myfs.super.i_state, 16, check);
+		usage_minus(myfs.super.d_state, 32, myfs.inode[check-1].di);
+		n = tlist[myfs.block[(myfs.inode[check-1].sin)-1].indirect.number[0]]->number;
+		while(1){
+			usage_minus(myfs.super.d_state, 32, n+1);
+			myfs.block[n] = d_clear;
+			if(tlist[n] -> next == NULL){
+				break;
+			}
+			check = tlist[n] -> next -> number;
+			tlist[n] -> next = NULL;
+			n = check;
+		}
+		for(i=0; i<10; i++){
+			if(!strcmp(pwd.name[i], "")){
+				i++;
+				break;
+			}
+		}
+		tree_del(file, i, pwd, tree);
+	}
+}
+
+//mytouch 함수
+void mytouch(char file[]){
+	int i, j, k, l, n, check, list, block, number, number2;
+	struct inode_list *inode;
+	time_t now = time(NULL);
+
+	n = where_am_i(pwd);
+	inode = &myfs.inode[n-1];
+	sscanf(file, "%4s", file);
+	check = find_file(inode, file);
+
+	if(check){
+		myfs.inode[check-1].time = *localtime(&now);
+		return;
+	}
+	else{
+		number = get_inode();
+		number2 = get_block();
+		//다이렉트 블럭에서
+		list = inode -> di;
+		for(i=0; i<18; i++){
+			if(!strcmp(myfs.block[list-1].directory.name[i], "")){
+				strcpy(myfs.block[list-1].directory.name[i], file);
+				myfs.block[list-1].directory.number[i] = number+1;
+				myfs.inode[number].type = 1;
+				myfs.inode[number].size = 0;
+				myfs.inode[number].time = *localtime(&now);
+				myfs.inode[number].di = number2+1;
+				tree_add(file, i, pwd, tree);
+				return;
+			}
+		}
+		//싱글 인다이렉트 블럭에서
+		block = inode -> sin;
+		if(block == 0){
+			block = get_block()+1;
+			inode->sin = block;
+			for(i=0; i<64; i++){
+				myfs.block[block-1].indirect.number[i] = 0;
+			}
+		}
+		for(i=0; i<64; i++){
+			list = myfs.block[block-1].indirect.number[i];
+			if(list == 0){
+				block = get_block()+1;
+				if(i==0){
+					tlist[(inode->di)-1]->next = tlist[block-1];
+				}
+				else{
+					tlist[myfs.block[block-1].indirect.number[i-1]]->next = tlist[block-1];
+				}
+				for(l=0; l<18; l++){
+					myfs.block[block-1].directory.number[l] = 0;
+					strcpy(myfs.block[block-1].directory.name[l], "");
+				}
+			}
+			for(j=0; j<18; j++){
+				if(!strcmp(myfs.block[list-1].directory.name[j], "")){
+					strcpy(myfs.block[list-1].directory.name[j], file);
+					myfs.block[list-1].directory.number[j] = number+1;
+					myfs.block[list-1].directory.number[i] = number+1;
+					myfs.inode[number].type = 1;
+					myfs.inode[number].size = 0;
+					myfs.inode[number].time = *localtime(&now);
+					myfs.inode[number].di = number2+1;
+					tree_add(file, i, pwd, tree);
+					return;
+				}
+			}
+		}
+		//더블 인다이렉트 블럭에서
+		if(inode->din == 0){
+			inode->din = get_block()+1;
+			for(i=0; i<64; i++){
+				myfs.block[(inode->din)-1].indirect.number[i] = 0;
+			}
+		}
+		for(i=0; i<64; i++){
+			block = myfs.block[(inode->din)-1].indirect.number[i];
+			if(block = 0){
+				block = get_block();
+				for(l=0; l<64; l++){
+					myfs.block[block-1].indirect.number[l] = 0;
+				}
+			}
+			for(j=0; j<64; j++){
+				list = myfs.block[block-1].indirect.number[j];
+				if(list == 0){
+					list = get_block()+1;
+					if(j==0){
+						tlist[(inode->di)-1]->next = tlist[block-1];
+					}
+					else{
+						tlist[myfs.block[block-1].indirect.number[j-1]]->next = tlist[block-1];
+					}
+					for(l=0; l<18; l++){
+						myfs.block[block-1].directory.number[l] = 0;
+						strcpy(myfs.block[block-1].directory.name[l], "");
+					}
+				}
+				for(k=0; k<18; k++){
+					if(!strcmp(myfs.block[list-1].directory.name[k], "")){
+						strcpy(myfs.block[list-1].directory.name[k], file);
+						myfs.block[list-1].directory.number[k] = number+1;
+						myfs.inode[number].type = 1;
+						myfs.inode[number].size = 0;
+						myfs.inode[number].time = *localtime(&now);
+						myfs.inode[number].di = number2+1;
+						tree_add(file, i, pwd, tree);
+						return;
+					}
+				}
+			}
+		}
+	}	
 }
 
 //myshowinode 함수
@@ -654,7 +1275,7 @@ void myshowinode(int n){
 		inode = &myfs.inode[n-1];
 		printf("file type : %s\n", (inode->type == 0) ? "directory" : "regular file");
 		printf("file size : %d byte\n", inode->size);
-		printf("modified time : %d/%d/%d %02d:%02d:%02d\n", inode->time->tm_year + 1900, inode->time->tm_mon + 1, inode->time->tm_mday, inode->time->tm_hour, inode->time->tm_min, inode->time->tm_sec);
+		printf("modified time : %d/%d/%d %02d:%02d:%02d\n", inode->time.tm_year + 1900, inode->time.tm_mon + 1, inode->time.tm_mday, inode->time.tm_hour, inode->time.tm_min, inode->time.tm_sec);
 		printf("data block list : %d", inode->di);
 		print_block_list(n);
 		printf("\n");
@@ -704,18 +1325,15 @@ void usage_plus(unsigned int c[], int n, int x){
 //슈퍼블럭에 비트열로 제거
 void usage_minus(unsigned int c[], int n, int x){
 	int i, j, k ,l = sizeof(int) * 8;
-	unsigned int mask = 1 << (l = 1), minus = 1;
+	unsigned int minus = 1;
 
 	for(i=0; i<n; i++){
-		for(j=0; j<l; j++){
-			if(x == (i * l + j + 1)){
-				mask >>= j;
-				if((c[i] & mask) != 0){
-					for(k=0; k<l-j-1; k++){
-						minus *= 2;
-					}
-					c[i] -= minus;
+		for(j=0; j<32; j++){
+			if(x == (i * 32 + j + 1)){
+				for(k=0; k<31-j; k++){
+					minus = minus * 2;
 				}
+				c[i] = c[i] - minus;
 			}
 		}
 	}
@@ -851,7 +1469,7 @@ struct present_working_directory where_is_there(char location[]){
 			temp = find_file(&myfs.inode[loc-1], step[i]);
 			//파일이 없으면
 			if(temp==0){
-				printf("error : %s is not exists\n", step[i]);
+				printf("error : %s is not exist\n", step[i]);
 				pwd_result = pwd_temp;
 				return pwd_result;
 			}
@@ -891,6 +1509,9 @@ int find_file(struct inode_list *inode, char file[]){
 	}
 	//싱글 인다이렉트 블럭에서
 	block = inode -> sin;
+	if(block == 0){
+		return 0;
+	}
 	for(i=0; i<64; i++){
 		list = myfs.block[block-1].indirect.number[i];
 		for(j=0; j<18; j++){
@@ -906,6 +1527,9 @@ int find_file(struct inode_list *inode, char file[]){
 	//더블 인다이렉트 블럭에서
 	for(i=0; i<64; i++){
 		block = myfs.block[(inode -> din)-1].indirect.number[i];
+		if(block == 0){
+			return 0;
+		}
 		for(j=0; j<64; j++){
 			list = myfs.block[block-1].indirect.number[j];
 			for(k=0; k<18; k++){
@@ -921,13 +1545,69 @@ int find_file(struct inode_list *inode, char file[]){
 	}
 }
 
+//파일이나 디렉터리를 찾아서 지워주는 함수
+int del_file(struct inode_list *inode, char file[]){
+	int i, j, k, n, check, block, list;
+
+	list = inode -> di;
+	//다이렉트 블럭에서
+	for(i=0; i<18; i++){
+		if(!strcmp(myfs.block[list-1].directory.name[i], "")){
+			return 0;
+		}
+		if(!strcmp(myfs.block[list-1].directory.name[i], file)){
+			n = myfs.block[list-1].directory.number[i];
+			myfs.block[list-1].directory.number[i] = 0;
+			strcpy(myfs.block[list-1].directory.name[i], "");
+			return n;
+		}
+	}
+	//싱글 인다이렉트 블럭에서
+	block = inode -> sin;
+	if(block == 0){
+		return 0;
+	}
+	for(i=0; i<64; i++){
+		list = myfs.block[block-1].indirect.number[i];
+		for(j=0; j<18; j++){
+			if(!strcmp(myfs.block[list-1].directory.name[j], "")){
+				return 0;
+			}
+			if(!strcmp(myfs.block[list-1].directory.name[j], file)){
+				n = myfs.block[list-1].directory.number[j];
+				myfs.block[list-1].directory.number[j] = 0;
+				strcpy(myfs.block[list-1].directory.name[j], "");
+				return n;
+			}
+		}
+	}
+	//더블 인다이렉트 블럭에서
+	for(i=0; i<64; i++){
+		block = myfs.block[(inode -> din)-1].indirect.number[i];
+		if(block == 0){
+			return 0;
+		}
+		for(j=0; j<64; j++){
+			list = myfs.block[block-1].indirect.number[j];
+			for(k=0; k<18; k++){
+				if(!strcmp(myfs.block[list-1].directory.name[k], "")){
+					return 0;
+				}
+				if(!strcmp(myfs.block[list-1].directory.name[k], file)){
+					n = myfs.block[list-1].directory.number[k];
+					myfs.block[list-1].directory.number[k] = 0;
+					strcpy(myfs.block[list-1].directory.name[k], "");
+					return n;
+				}
+			}
+		}
+	}
+}
 //블럭 리스트 출력
 void print_block_list(int n){
-	int i, j, block;
+	int i = 0, j, block;
 
-	//싱글 인다이렉트 블럭에서
 	block = myfs.inode[n-1].sin;
-
 	if(block==0){
 		return;
 	}
@@ -962,36 +1642,112 @@ void print_block_list(int n){
 }
 
 //mytree에 파일 더하기
-void tree_add(char name[], char up[], int step, struct mytree *check){
+void tree_add(char name[], int step, struct present_working_directory phase, struct mytree *check){
+	int i;
+
+	//추가할 위치 찾기
 	if(step == (check->step)+1){
-		if(!strcmp(check->name, up)){
+		if((check->name[0] == phase.name[step-2][0]) && (check->name[1] == phase.name[step-2][1]) && (check->name[2] == phase.name[step-2][2]) && (check->name[3] == phase.name[step-2][3])){
 			if(check->down == NULL){
 				check->down = malloc(sizeof(struct mytree));
-				strcpy(check->down->name, name);
+				for(i=0; i<4; i++){
+					check->down->name[i] = name[i];
+				}
 				check->down->step = step;
 				check->down->next = NULL;
 				check->down->down = NULL;
 			}
 			else{
-				tree_add(name, up, step, check->down);
+				tree_add(name, step, phase, check->down);
 			}
-			return;
 		}
+		else{
+			tree_add(name, step, phase, check->next);
+		}
+		return;
 	}
-	if(step == check->step){
+	else if(step == (check->step)){
 		if(check->next == NULL){
 			check->next = malloc(sizeof(struct mytree));
-			strcpy(check->next->name, name);
+			for(i=0; i<4; i++){
+				check->next->name[i] = name[i];
+			}
 			check->next->step = step;
 			check->next->next = NULL;
 			check->next->down = NULL;
 		}
 		else{
-			tree_add(name, up, step, check->next);
+			tree_add(name, step, phase, check->next);
 		}
 		return;
 	}
+	else{
+		for(int i=2; i<10; i++){
+			if(step == (check->step)+i){
+				if((check->name[0] == phase.name[step-i-1][0]) && (check->name[1] == phase.name[step-i-1][1]) && (check->name[2] == phase.name[step-i-1][2]) && (check->name[3] == phase.name[step-i-1][3])){
+					tree_add(name, step, phase, check->down);
+					return;
+				}
+				else{
+					tree_add(name, step, phase, check->next);
+					return;
+				}
+			}
+		}
+	}
 }
+
+//mytree에 파일 지우기
+void tree_del(char name[], int step, struct present_working_directory phase, struct mytree *check){
+	int i;
+	struct mytree temp;
+
+	//제거할 위치 찾기
+	if(step == (check->step)+1){
+		if((check->name[0] == phase.name[step-2][0]) && (check->name[1] == phase.name[step-2][1]) && (check->name[2] == phase.name[step-2][2]) && (check->name[3] == phase.name[step-2][3])){
+			if((check->down->name[0] == name[0]) && (check->down->name[1] == name[1]) && (check->down->name[2] == name[2]) && (check->down->name[3] == name[3])){
+				temp = *(check->down);
+				free(check->down);
+				check->down = temp.next;
+			}
+			else{
+				tree_del(name, step, phase, check->down);
+			}
+		}
+		else{
+			tree_del(name, step, phase, check->next);
+		}
+		return;
+	}
+	else if(step == (check->step)){
+		if((check->next->name[0] == name[0]) && (check->next->name[1] == name[1]) && (check->next->name[2] == name[2]) && (check->next->name[3] == name[3])){
+			temp = *(check->next);
+			free(check->next);
+			check->next = temp.next;
+		}
+		else{
+			tree_del(name, step, phase, check->next);
+		}
+		return;
+	}
+	else{
+		for(int i=2; i<10; i++){
+			if(step == (check->step)+i){
+				if((check->name[0] == phase.name[step-i-1][0]) && (check->name[1] == phase.name[step-i-1][1]) && (check->name[2] == phase.name[step-i-1][2]) && (check->name[3] == phase.name[step-i-1][3])){
+					tree_del(name, step, phase, check->down);
+					return;
+				}
+				else{
+					tree_del(name, step, phase, check->next);
+					return;
+				}
+			}
+		}
+	}
+}
+
+
+
 
 
 
